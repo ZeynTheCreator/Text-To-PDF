@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to PDF Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a86e8;
+            --secondary-color: #f7f7f7;
+            --accent-color: #3366cc;
+            --text-color: #333;
+            --page-shadow: rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #e9ecef;
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .description {
+            color: #666;
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .textarea-container {
+            position: relative;
+            width: 100%;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            transition: border 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .word-count {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            color: #999;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #555;
+        }
+
+        select, input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+        }
+
+        .btn-secondary {
+            background-color: #e6e6e6;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d4d4d4;
+        }
+
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .preview-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-count {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pages-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+        }
+
+        .page {
+            width: 595px;
+            height: 842px;
+            background-color: white;
+            padding: 50px;
+            box-shadow: 0 4px 8px var(--page-shadow);
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #ddd;
+        }
+
+        .page-content {
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .settings-panel {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .settings-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .advanced-settings {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .page {
+                width: 100%;
+                height: auto;
+                min-height: 500px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .control-group {
+                width: 100%;
+            }
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1001;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Text to PDF Converter</h1>
+            <p class="description">Convert your text into properly formatted PDF pages with this easy-to-use tool. See preview pages, get an accurate page count, and download your document.</p>
+        </header>
+        
+        <div class="main-content">
+            <section class="input-section">
+                <div class="settings-panel">
+                    <div class="settings-title">Document Settings</div>
+                    <div class="advanced-settings">
+                        <div class="control-group">
+                            <label for="fontFamily">Font</label>
+                            <select id="fontFamily">
+                                <option value="Arial, sans-serif">Arial</option>
+                                <option value="'Times New Roman', serif">Times New Roman</option>
+                                <option value="Courier, monospace">Courier</option>
+                                <option value="Georgia, serif">Georgia</option>
+                                <option value="Verdana, sans-serif">Verdana</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="fontSize">Font Size (pt)</label>
+                            <select id="fontSize">
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12" selected>12</option>
+                                <option value="14">14</option>
+                                <option value="16">16</option>
+                                <option value="18">18</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="lineHeight">Line Spacing</label>
+                            <select id="lineHeight">
+                                <option value="1">Single</option>
+                                <option value="1.15">1.15</option>
+                                <option value="1.5" selected>1.5</option>
+                                <option value="2">Double</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="documentTitle">Document Title</label>
+                            <input type="text" id="documentTitle" placeholder="Untitled Document">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="textarea-container">
+                    <textarea id="textInput" placeholder="Enter your text here..."></textarea>
+                    <div class="word-count" id="wordCount">0 words</div>
+                </div>
+                
+                <div class="controls">
+                    <button id="previewBtn" class="btn">Generate Preview</button>
+                    <button id="downloadBtn" class="btn btn-secondary" disabled>Download PDF</button>
+                    <button id="clearBtn" class="btn btn-secondary">Clear</button>
+                </div>
+            </section>
+            
+            <section class="preview-section">
+                <div class="preview-info">
+                    <div class="page-count" id="pageCountDisplay">0 pages</div>
+                </div>
+                
+                <div class="pages-container" id="pagesContainer">
+                    <!-- Preview pages will be inserted here -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="loading" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Initialize jsPDF
+        const { jsPDF } = window.jspdf;
+        
+        // DOM Elements
+        const textInput = document.getElementById('textInput');
+        const previewBtn = document.getElementById('previewBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const pagesContainer = document.getElementById('pagesContainer');
+        const pageCountDisplay = document.getElementById('pageCountDisplay');
+        const wordCount = document.getElementById('wordCount');
+        const fontFamilySelect = document.getElementById('fontFamily');
+        const fontSizeSelect = document.getElementById('fontSize');
+        const lineHeightSelect = document.getElementById('lineHeight');
+        const documentTitleInput = document.getElementById('documentTitle');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const toast = document.getElementById('toast');
+
+        // Variables
+        let pages = [];
+        
+        // A4 dimensions in points
+        const PAGE_WIDTH = 595;
+        const PAGE_HEIGHT = 842;
+        const MARGIN = 50;
+        const CONTENT_WIDTH = PAGE_WIDTH - (2 * MARGIN);
+        const CONTENT_HEIGHT = PAGE_HEIGHT - (2 * MARGIN);
+
+        // Event Listeners
+        previewBtn.addEventListener('click', generatePreview);
+        downloadBtn.addEventListener('click', downloadPDF);
+        clearBtn.addEventListener('click', clearAll);
+        textInput.addEventListener('input', updateWordCount);
+        
+        // Settings change events
+        fontFamilySelect.addEventListener('change', generatePreview);
+        fontSizeSelect.addEventListener('change', generatePreview);
+        lineHeightSelect.addEventListener('change', generatePreview);
+
+        // Initial word count
+        updateWordCount();
+
+        // Functions
+        function updateWordCount() {
+            const text = textInput.value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            wordCount.textContent = `${words} words`;
+        }
+
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        function showToast(message, duration = 3000) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        function generatePreview() {
+            const text = textInput.value;
+            if (!text.trim()) {
+                showToast('Please enter some text first.');
+                return;
+            }
+            
+            showLoading();
+            
+            // Clear previous pages
+            pagesContainer.innerHTML = '';
+            pages = [];
+            
+            // Get current settings
+            const fontFamily = fontFamilySelect.value;
+            const fontSize = parseInt(fontSizeSelect.value);
+            const lineHeight = parseFloat(lineHeightSelect.value);
+            
+            // Create a test element to calculate text wrapping
+            const testEl = document.createElement('div');
+            testEl.style.fontFamily = fontFamily;
+            testEl.style.fontSize = `${fontSize}px`;
+            testEl.style.lineHeight = lineHeight;
+            testEl.style.width = `${CONTENT_WIDTH}px`;
+            testEl.style.position = 'absolute';
+            testEl.style.visibility = 'hidden';
+            testEl.style.whiteSpace = 'pre-wrap';
+            testEl.style.wordBreak = 'break-word';
+            document.body.appendChild(testEl);
+            
+            // Split text into paragraphs
+            const paragraphs = text.split(/\n\s*\n/);
+            
+            let currentPage = createNewPage(1);
+            let currentPageContent = currentPage.querySelector('.page-content');
+            let currentPageHeight = 0;
+            
+            // Process each paragraph
+            paragraphs.forEach(paragraph => {
+                testEl.textContent = paragraph.trim();
+                const paragraphHeight = testEl.offsetHeight;
+                
+                // Check if paragraph fits on current page
+                if (currentPageHeight + paragraphHeight > CONTENT_HEIGHT) {
+                    // Create a new page
+                    const pageNumber = pages.length + 1;
+                    currentPage = createNewPage(pageNumber);
+                    currentPageContent = currentPage.querySelector('.page-content');
+                    currentPageHeight = 0;
+                }
+                
+                // Add paragraph to current page
+                currentPageContent.innerHTML += `<p>${paragraph.trim()}</p>`;
+                currentPageHeight += paragraphHeight;
+            });
+            
+            // Remove test element
+            document.body.removeChild(testEl);
+            
+            // Update page count display
+            pageCountDisplay.textContent = `${pages.length} page${pages.length !== 1 ? 's' : ''}`;
+            
+            // Enable download button
+            downloadBtn.disabled = false;
+            
+            // Apply styles to all pages
+            pages.forEach(page => {
+                const contentDiv = page.querySelector('.page-content');
+                contentDiv.style.fontFamily = fontFamily;
+                contentDiv.style.fontSize = `${fontSize}px`;
+                contentDiv.style.lineHeight = lineHeight;
+            });
+            
+            hideLoading();
+        }
+
+        function createNewPage(pageNumber) {
+            const page = document.createElement('div');
+            page.className = 'page';
+            page.innerHTML = `
+                <div class="page-content"></div>
+                <div class="page-number">${pageNumber}</div>
+            `;
+            pagesContainer.appendChild(page);
+            pages.push(page);
+            return page;
+        }
+
+        async function downloadPDF() {
+            if (pages.length === 0) {
+                showToast('Please generate a preview first.');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                // Get document title or use default
+                let docTitle = documentTitleInput.value.trim();
+                if (!docTitle) {
+                    docTitle = 'Document';
+                }
+                
+                // Create PDF document (A4 size)
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'pt',
+                    format: 'a4'
+                });
+                
+                // Process each page
+                for (let i = 0; i < pages.length; i++) {
+                    // Add a new page for all pages after the first one
+                    if (i > 0) {
+                        pdf.addPage();
+                    }
+                    
+                    // Convert page to image
+                    const canvas = await html2canvas(pages[i], {
+                        scale: 2, // Higher scale for better quality
+                        useCORS: true,
+                        logging: false
+                    });
+                    
+                    // Add image to PDF
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    pdf.addImage(imgData, 'JPEG', 0, 0, PAGE_WIDTH, PAGE_HEIGHT);
+                }
+                
+                // Save PDF
+                pdf.save(`${docTitle}.pdf`);
+                showToast('PDF downloaded successfully!');
+                
+            } catch (error) {
+                console.error('Error creating PDF:', error);
+                showToast('Error creating PDF. Please try again.');
+            }
+            
+            hideLoading();
+        }
+
+        function clearAll() {
+            textInput.value = '';
+            pagesContainer.innerHTML = '';
+            pageCountDisplay.textContent = '0 pages';
+            documentTitleInput.value = '';
+            downloadBtn.disabled = true;
+            pages = [];
+            updateWordCount();
+            showToast('All content cleared.');
+        }
+    </script>
+</body>
+</html>
